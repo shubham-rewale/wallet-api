@@ -39,12 +39,12 @@ class Email {
 		await this.transporter().sendMail(mailOptions);
 	}
 
-	async sendTransactionConfirmation(trx) {
+	async sendTransactionConfirmation(trx, senderAddress, receiverAddress) {
 		const mailOptions = {
 			from: this.from,
 			to: this.to,
 			subject: "Transaction Confirmation",
-			text: `Transaction was successful, From: ${trx.sender} => To: ${trx.receiver}, of Amount: ${trx.amount}, with transaction id of ${trx.id}`,
+			text: `Transaction was successful, From: ${trx.sender}(${senderAddress}) => To: ${trx.receiver}(${receiverAddress}), of Amount: ${trx.amount}, with transaction id of ${trx.id}`,
 		};
 
 		await this.transporter().sendMail(mailOptions);

@@ -2,19 +2,32 @@
 import Jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { promisify } from "util";
+import { ethers } from "ethers";
 
 import userModel from "../models/userModel.js";
 import Email from "../services/email.js";
 import sendJWToken from "../services/sendJWToken.js";
+import tokenContractABI from "../services/tokenContractABI.js";
 
 export const signUp = async (req, res) => {
 	try {
+		const provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:8545/");
+		const signer = new ethers.Wallet(process.env.ADMIN_PRIVATE_KEY, provider);
+		const tokenContractInstance = new ethers.Contract(
+			process.env.TOKEN_CONTRACT_ADDRESS,
+			tokenContractABI,
+			provider
+		);
 		const newUser = await userModel.create({
 			name: req.body.name,
 			email: req.body.email,
+			paymentAddress: req.body.paymentAddress,
 			password: req.body.password,
 			passwordConfirm: req.body.passwordConfirm,
 		});
+		await tokenContractInstance
+			.connect(signer)
+			.mint(newUser.paymentAddress, ethers.utils.parseUnits("1000", 18));
 		const mail = new Email(newUser);
 		await mail.sendWelcome();
 		sendJWToken(newUser, 201, req, res);

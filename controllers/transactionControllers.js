@@ -1,16 +1,26 @@
 /* eslint-disable import/extensions */
 import mongoose from "mongoose";
+import { ethers } from "ethers";
 
 import userModel from "../models/userModel.js";
 import trxModel from "../models/transactionModel.js";
 import Email from "../services/email.js";
+import tokenContractABI from "../services/tokenContractABI.js";
 
 // eslint-disable-next-line consistent-return
 export const transferFunds = async (req, res) => {
 	const session = await mongoose.startSession();
 	session.startTransaction();
 	try {
+		const provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:8545/");
+		const signer = new ethers.Wallet(req.body.senderPrivateKey, provider);
+		const tokenContractInstance = new ethers.Contract(
+			process.env.TOKEN_CONTRACT_ADDRESS,
+			tokenContractABI,
+			provider
+		);
 		const { recepientEmail, amountToTransfer } = req.body;
+		const transaferAmount = ethers.utils.parseUnits(amountToTransfer, 18);
 		const recepientUser = await userModel.findOne({ email: recepientEmail }, null, { session });
 		const senderUser = await userModel.findById(req.user.id, null, { session });
 		if (!recepientUser) {
@@ -19,7 +29,7 @@ export const transferFunds = async (req, res) => {
 				message: "Recepient address doesn't exist",
 			});
 		}
-		if (senderUser.balance < amountToTransfer) {
+		if (transaferAmount.gt(await tokenContractInstance.balanceOf(signer.address))) {
 			return res.status(401).json({
 				status: "Fail",
 				message: "Sender doesn't have enough balance",
@@ -31,23 +41,36 @@ export const transferFunds = async (req, res) => {
 					sender: senderUser.id,
 					receiver: recepientUser.id,
 					amount: amountToTransfer,
+					ethTRXHash: "Null",
 				},
 			],
 			{ session }
 		);
-		senderUser.updateBalance(-amountToTransfer);
-		recepientUser.updateBalance(amountToTransfer);
-		await senderUser.save({ validateBeforeSave: false });
-		await recepientUser.save({ validateBeforeSave: false });
+		const ethTrx = await tokenContractInstance
+			.connect(signer)
+			.transfer(recepientUser.paymentAddress, transaferAmount);
+		if (!ethTrx) {
+			throw new Error("Transaction Failed");
+		}
+		await trxModel.findByIdAndUpdate(trx[0].id, { ethTRXHash: ethTrx.hash }, { session });
 		await session.commitTransaction();
 		const mailToSender = new Email(senderUser);
-		await mailToSender.sendTransactionConfirmation(trx[0]);
+		await mailToSender.sendTransactionConfirmation(
+			trx[0],
+			signer.address,
+			recepientUser.paymentAddress
+		);
 		const mailToReceiver = new Email(recepientUser);
-		await mailToReceiver.sendTransactionConfirmation(trx[0]);
+		await mailToReceiver.sendTransactionConfirmation(
+			trx[0],
+			signer.address,
+			recepientUser.paymentAddress
+		);
 		res.status(200).json({
 			status: "Success",
 			message: "Transfer was successful",
-			transactionId: trx.id,
+			transactionId: trx[0].id,
+			ethTransactionHash: ethTrx.hash,
 		});
 	} catch (err) {
 		console.log(err);

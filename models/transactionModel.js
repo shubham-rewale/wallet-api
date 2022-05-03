@@ -19,6 +19,10 @@ const transactionSchema = new mongoose.Schema({
 		type: Number,
 		require: [true, "Amount must be specified"],
 	},
+	ethTRXHash: {
+		type: String,
+		require: [true, "EthTrx is required"],
+	},
 });
 
 // eslint-disable-next-line func-names

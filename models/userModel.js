@@ -21,6 +21,11 @@ const userSchema = new mongoose.Schema({
 		enum: ["admin", "user"],
 		default: "user",
 	},
+	paymentAddress: {
+		type: String,
+		required: [true, "Payment address can not ne null"],
+		validate: [validator.isEthereumAddress, "Please provide a valid payment address"],
+	},
 	password: {
 		type: String,
 		required: [true, "Password can not be null"],
@@ -45,10 +50,6 @@ const userSchema = new mongoose.Schema({
 		type: Boolean,
 		default: true,
 		select: false,
-	},
-	balance: {
-		type: Number,
-		default: 1000,
 	},
 });
 
@@ -75,10 +76,6 @@ userSchema.pre(/^find/, function (next) {
 	this.find({ active: { $ne: false } });
 	next();
 });
-
-userSchema.methods.updateBalance = function (changedAmount) {
-	this.balance += changedAmount;
-};
 
 userSchema.methods.checkPassword = async function (inputPassword, storedPassword) {
 	// eslint-disable-next-line no-return-await

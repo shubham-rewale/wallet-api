@@ -2,6 +2,7 @@
 import express from "express";
 
 import * as authController from "../controllers/authControllers.js";
+import * as userController from "../controllers/userControllers.js";
 
 const userRouter = express.Router();
 
@@ -18,5 +19,13 @@ userRouter.route("/resetPassword").patch(authController.resetPassword);
 userRouter
 	.route("/updatePassword")
 	.patch(authController.isUserLoggedIn, authController.updatePassword);
+
+userRouter
+	.route("/updatePaymentAddress")
+	.patch(authController.isUserLoggedIn, userController.updatePaymentAddress);
+
+userRouter.route("/getBalance").get(userController.getBalance);
+
+userRouter.route("/getUser").get(userController.getUser);
 
 export default userRouter;
