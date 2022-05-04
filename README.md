@@ -5,6 +5,7 @@ The API is developed using Express framework and MongoDB as a database, with Nod
 - User can SignUp to the system to use the API.
 - User can transfer the funds to the other users of the system.
 
+***
 
 ### Features
 
@@ -13,14 +14,17 @@ The API is developed using Express framework and MongoDB as a database, with Nod
 - User account is password protected.
 - Transaction Confirmation is send via Email to the User
 
+***
+
 ### Tech
 
-Dillinger uses a number of open source projects to work properly:
 - Node.js
 - Express
 - Nodemailer
 - Mongoose
 - MongoDB
+
+***
 
 ### Run the API
 API requires Node.js to run.
@@ -32,6 +36,8 @@ npm i
 npm start
 ```
 This API is not ready for the use in production.
+
+***
 
 ### Available Endpoints
 - (POST) ---  api/v1/users/signUp
